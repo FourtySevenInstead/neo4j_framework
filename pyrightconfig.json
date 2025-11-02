@@ -1,0 +1,17 @@
+{
+  "include": ["."],
+  "exclude": [".venv", "__pycache__", "build", "dist", ".git"],
+  "pythonVersion": "3.11",
+  "pythonPlatform": "Linux",
+  "typeCheckingMode": "basic",
+  "reportMissingTypeStubs": false,
+  "reportPrivateUsage": false,
+  "reportUnknownMemberType": false,
+  "reportUnknownParameterType": false,
+  "reportGeneralTypeIssues": false,
+  "reportMissingParameterType": false,
+  "reportUnusedImport": false,
+  "venvPath": ".",
+  "venv": ".venv",
+  "extraPaths": ["."]
+}

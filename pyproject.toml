@@ -1,0 +1,13 @@
+[project]
+name = "neo4j-framework"
+version = "2.0.0"
+requires-python = ">=3.11"
+
+[tool.pyright]
+include = ["."]
+exclude = [".venv", "__pycache__", "build", "dist"]
+pythonVersion = "3.11"
+typeCheckingMode = "basic"
+venvPath = "."
+venv = ".venv"
+extraPaths = ["."]
