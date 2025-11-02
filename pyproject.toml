@@ -25,8 +25,11 @@ Repository = "https://github.com/FourtySevenInstead/neo4j_framework.git"
 Documentation = "https://github.com/FourtySevenInstead/neo4j_framework/blob/main/README.md"
 
 [tool.setuptools]
-packages = ["neo4j_framework"]
 package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["neo4j_framework*"]
 
 [tool.pyright]
 include = ["src"]
