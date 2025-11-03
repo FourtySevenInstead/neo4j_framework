@@ -134,7 +134,7 @@ class QueryManager:
             "execute_query() called. For better performance, use "
             "execute_read() for read operations or execute_write() for write operations."
         )
-        from src.neo4j_framework.queries.base_query import BaseQuery
+        from neo4j_framework.queries.base_query import BaseQuery
 
         query = BaseQuery(query_str, params)
         return query.execute(self.connection, database)

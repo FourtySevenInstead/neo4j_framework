@@ -38,7 +38,7 @@ class Neo4jConnection:
         Raises:
             ValueError: If configuration is invalid
         """
-        from src.neo4j_framework.utils.validators import Validators
+        from neo4j_framework.utils.validators import Validators
 
         # Validate inputs
         Validators.validate_not_none(uri, "uri")
