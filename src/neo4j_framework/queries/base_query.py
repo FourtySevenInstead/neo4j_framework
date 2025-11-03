@@ -3,10 +3,9 @@ Base query class with parameter safety and logging.
 """
 
 import logging
-from typing import Dict, Any, LiteralString
+from typing import Any, Dict, LiteralString, Optional
 
 from neo4j import Query
-
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +36,9 @@ class BaseQuery:
         self.params = params or {}
         logger.debug(f"Query initialized with {len(self.params)} parameters")
 
-    def execute(self, connection, database: str | None = None):
+    def execute(
+        self, connection: "Neo4jConnection", database: Optional[str] = None
+    ) -> list:
         """
         Execute the query.
 

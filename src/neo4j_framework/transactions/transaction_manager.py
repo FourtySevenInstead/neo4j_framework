@@ -28,7 +28,7 @@ class TransactionManager:
         logger.debug("TransactionManager initialized")
 
     def run_in_transaction(
-        self, tx_function: Callable, database: Optional[str] = None
+        self, tx_function: Callable[..., Any], database: Optional[str] = None
     ) -> Any:
         """
         Execute a function within a managed transaction.
@@ -43,8 +43,6 @@ class TransactionManager:
         Raises:
             Exception: If transaction fails
         """
-        if tx_function is None:
-            raise ValueError("tx_function cannot be None")
 
         logger.debug("Starting managed transaction...")
 
@@ -101,7 +99,12 @@ class TransactionManager:
         )
         return self._session
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: object,
+    ) -> bool:
         """
         Context manager exit.
 

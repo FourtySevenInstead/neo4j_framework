@@ -1,17 +1,28 @@
 {
-  "include": ["."],
-  "exclude": [".venv", "__pycache__", "build", "dist", ".git"],
+  "include": ["src"],
+  "exclude": [
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+    ".git",
+    "node_modules",
+    "tests"
+  ],
   "pythonVersion": "3.11",
   "pythonPlatform": "Linux",
-  "typeCheckingMode": "basic",
+  "typeCheckingMode": "strict",
   "reportMissingTypeStubs": false,
   "reportPrivateUsage": false,
   "reportUnknownMemberType": false,
   "reportUnknownParameterType": false,
   "reportGeneralTypeIssues": false,
   "reportMissingParameterType": false,
-  "reportUnusedImport": false,
+  "reportOptionalMemberAccess": false,
+  "reportAttributeAccessIssue": false,
+  "reportUnusedVariable": true,
+  "reportUnusedImport": true,
+  "stubPath": "src/neo4j_framework/stubs",
   "venvPath": ".",
-  "venv": ".venv",
-  "extraPaths": ["."]
+  "venv": ".venv"
 }
