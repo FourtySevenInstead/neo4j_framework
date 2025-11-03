@@ -2,13 +2,19 @@
 CSV import functionality with path validation and logging.
 """
 
-import os
+from __future__ import annotations
+
 import logging
+import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 
-from neo4j import Query
-
+if TYPE_CHECKING:
+    from src.neo4j_framework.stubs.neo4j import (
+        Driver,
+        Query,
+        Result,
+    )  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +26,7 @@ class CSVImporter:
     Validates file paths to prevent directory traversal attacks.
     """
 
-    def __init__(self, connection, allowed_dir: Optional[str] = None):
+    def __init__(self, connection: Any, allowed_dir: Optional[str] = None):
         """
         Initialize CSV importer.
 
@@ -67,7 +73,7 @@ class CSVImporter:
                 path.relative_to(self.allowed_dir)
             except ValueError:
                 raise ValueError(
-                    f"CSV file must be within {self.allowed_dir}, got {file_path}"
+                    f"CSV file must be within {self.allowed_dir}, " f"got {file_path}"
                 )
 
         logger.debug(f"File path validated: {path}")
@@ -79,7 +85,7 @@ class CSVImporter:
         query: Query,
         params: Optional[Dict[str, Any]] = None,
         database: Optional[str] = None,
-    ) -> Any:
+    ) -> Result:
         """
         Import CSV file using Neo4j LOAD CSV.
 
@@ -100,9 +106,9 @@ class CSVImporter:
             ValueError: If file_path is invalid or outside allowed directory
             Exception: If query execution fails
         """
-        if file_path is None:
+        if not file_path:
             raise ValueError("file_path cannot be None")
-        if query is None:
+        if not query:
             raise ValueError("query cannot be None")
 
         # Validate and normalize path
@@ -116,9 +122,9 @@ class CSVImporter:
         full_params["file_url"] = validated_path.as_uri()
 
         try:
-            with self.connection.get_driver().session(
-                database=database or self.connection.database
-            ) as session:
+            driver = cast(Driver, self.connection.get_driver())
+            effective_db = database or cast(str, self.connection.database)
+            with driver.session(database=effective_db) as session:
                 result = session.run(query, full_params)
                 logger.info(f"CSV import completed: {validated_path}")
                 return result

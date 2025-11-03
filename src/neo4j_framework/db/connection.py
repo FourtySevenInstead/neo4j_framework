@@ -3,10 +3,11 @@ Neo4j connection management with support for multiple authentication methods.
 """
 
 import logging
-from typing import Optional, Any, Dict, cast
-from neo4j import GraphDatabase, Driver, Auth
+from typing import Optional, Any, Dict, Type, cast, Callable, TypeVar
+from neo4j import GraphDatabase, Driver, Auth, Session
 
 logger = logging.getLogger(__name__)
+T = TypeVar("T")
 
 
 class Neo4jConnection:
@@ -225,6 +226,35 @@ class Neo4jConnection:
         except Exception:
             return {"status": "unable to retrieve pool stats"}
 
+    def run_in_session(
+        self,
+        func: Callable[[Session], T],
+        database: Optional[str] = None,
+    ) -> T:
+        """
+        Execute a function within a Neo4j session.
+
+        Args:
+            func: Function that takes a Session and returns a value.
+            database: Optional database name (defaults to self.database).
+
+        Returns:
+            Result of func.
+
+        Raises:
+            RuntimeError: If not connected.
+            Exception: If func raises.
+        """
+        if not self.is_connected():
+            raise RuntimeError("Not connected to Neo4j")
+        effective_db = database or self.database
+        try:
+            with self._driver.session(database=effective_db) as session:  # type: ignore
+                return func(session)
+        except Exception as e:
+            logger.error(f"Session execution failed: {type(e).__name__}: {e}")
+            raise
+
     def __enter__(self) -> "Neo4jConnection":
         """Context manager entry."""
         self.connect()
@@ -232,9 +262,9 @@ class Neo4jConnection:
 
     def __exit__(
         self,
-        exc_type: Optional[type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Any,
+        _exc_type: Optional[type[BaseException]],
+        _exc_val: Optional[BaseException],
+        _exc_tb: Any,
     ) -> bool:
         """Context manager exit."""
         self.close()

@@ -77,7 +77,7 @@ class TransactionManager:
         Raises:
             Exception: If transaction fails
         """
-        if query is None:
+        if not query:
             raise ValueError("query cannot be None")
 
         logger.debug("Executing explicit transaction...")
@@ -102,8 +102,8 @@ class TransactionManager:
     def __exit__(
         self,
         exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: object,
+        _exc_val: BaseException | None,
+        _exc_tb: object,
     ) -> bool:
         """
         Context manager exit.
