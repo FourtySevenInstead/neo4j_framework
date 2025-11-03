@@ -2,11 +2,20 @@
 Transaction management with context manager support.
 """
 
+from __future__ import annotations
+
 import logging
-from typing import Callable, Any, Dict, Optional
+from typing import Callable, Any, Dict, Optional, TYPE_CHECKING, cast
 
 
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from src.neo4j_framework.stubs.neo4j import (
+        Driver,
+        Result,
+        Session,
+    )  # noqa: F401
 
 
 class TransactionManager:
@@ -24,7 +33,7 @@ class TransactionManager:
         if connection is None:
             raise ValueError("connection cannot be None")
         self.connection = connection
-        self._session = None
+        self._session: Optional[Session] = None
         logger.debug("TransactionManager initialized")
 
     def run_in_transaction(
@@ -46,10 +55,11 @@ class TransactionManager:
 
         logger.debug("Starting managed transaction...")
 
+        driver = cast(Driver, self.connection.get_driver())
+        effective_db = database or cast(str, self.connection.database)
+
         try:
-            with self.connection.get_driver().session(
-                database=database or self.connection.database
-            ) as session:
+            with driver.session(database=effective_db) as session:
                 result = session.execute_write(tx_function)
                 logger.debug("Transaction completed successfully")
                 return result
@@ -94,9 +104,8 @@ class TransactionManager:
         Opens a session for the transaction block.
         """
         logger.debug("Entering transaction context...")
-        self._session = self.connection.get_driver().session(
-            database=self.connection.database
-        )
+        driver = cast(Driver, self.connection.get_driver())
+        self._session = driver.session(database=cast(str, self.connection.database))
         return self._session
 
     def __exit__(
