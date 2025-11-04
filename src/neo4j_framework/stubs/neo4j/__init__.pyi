@@ -131,6 +131,15 @@ class Transaction:
         """Close the transaction."""
         ...
 
+class ManagedTransaction:
+    """Neo4j ManagedTransaction type for transaction functions."""
+
+    def run(
+        self, query: str, parameters: Optional[Dict[str, Any]] = None, **kwargs: Any
+    ) -> Result:
+        """Execute a query within the managed transaction."""
+        ...
+
 class Session:
     """Neo4j Session type."""
 
@@ -156,11 +165,15 @@ class Session:
         """Execute a function in a write transaction."""
         ...
 
-    def execute_read(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+    def execute_read(
+        self, func: Callable[[ManagedTransaction], Any], *args: Any, **kwargs: Any
+    ) -> Any:
         """Execute a read operation (Neo4j 4.4+)."""
         ...
 
-    def execute_write(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+    def execute_write(
+        self, func: Callable[[ManagedTransaction], Any], *args: Any, **kwargs: Any
+    ) -> Any:
         """Execute a write operation (Neo4j 4.4+)."""
         ...
 

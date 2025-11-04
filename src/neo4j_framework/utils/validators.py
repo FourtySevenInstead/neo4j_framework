@@ -3,6 +3,7 @@ Input validation utilities.
 """
 
 import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +14,7 @@ class Validators:
     """
 
     @staticmethod
-    def validate_not_none(value, name: str):
+    def validate_not_none(value: Any, name: str):
         """
         Validate that a value is not None.
 
@@ -45,7 +46,7 @@ class Validators:
             raise ValueError(f"{name} cannot be empty")
 
     @staticmethod
-    def validate_positive_int(value: int, name: str):
+    def validate_positive_int(value: Any, name: str):
         """
         Validate that a value is a positive integer.
 
@@ -62,7 +63,7 @@ class Validators:
 
     @staticmethod
     def validate_int(
-        value: int,
+        value: Any,
         name: str,
         min_val: int | None = None,
         max_val: int | None = None,
@@ -79,7 +80,7 @@ class Validators:
 
     @staticmethod
     def validate_float(
-        value: float,
+        value: Any,
         name: str,
         min_val: float | None = None,
         max_val: float | None = None,

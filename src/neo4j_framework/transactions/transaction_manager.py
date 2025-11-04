@@ -5,14 +5,17 @@ Transaction management with context manager support.
 from __future__ import annotations
 
 import logging
-from typing import Callable, Any, Dict, Optional, TYPE_CHECKING, cast
+from typing import Callable, Any, Dict, Optional, TYPE_CHECKING, cast, TypeVar
 
 
 logger = logging.getLogger(__name__)
 
+T = TypeVar("T")
+
 if TYPE_CHECKING:
-    from src.neo4j_framework.stubs.neo4j import (
+    from neo4j_framework.stubs.neo4j import (
         Driver,
+        ManagedTransaction,
         Result,
         Session,
     )  # noqa: F401
@@ -23,12 +26,15 @@ class TransactionManager:
     Handles both managed and explicit transactions with context manager support.
     """
 
-    def __init__(self, connection):
+    def __init__(self, connection: Any):
         """
         Initialize transaction manager.
 
         Args:
             connection: Neo4j connection instance
+
+        Raises:
+            ValueError: If connection is None
         """
         if connection is None:
             raise ValueError("connection cannot be None")
@@ -37,8 +43,10 @@ class TransactionManager:
         logger.debug("TransactionManager initialized")
 
     def run_in_transaction(
-        self, tx_function: Callable[..., Any], database: Optional[str] = None
-    ) -> Any:
+        self,
+        tx_function: Callable[[ManagedTransaction], T],
+        database: Optional[str] = None,
+    ) -> T:
         """
         Execute a function within a managed transaction.
 
@@ -72,7 +80,7 @@ class TransactionManager:
         query: str,
         params: Optional[Dict[str, Any]] = None,
         database: Optional[str] = None,
-    ) -> Any:
+    ) -> Result:
         """
         Execute an explicit transaction with a single query.
 
@@ -85,6 +93,7 @@ class TransactionManager:
             Query result
 
         Raises:
+            ValueError: If query is None
             Exception: If transaction fails
         """
         if not query:
@@ -92,16 +101,19 @@ class TransactionManager:
 
         logger.debug("Executing explicit transaction...")
 
-        def tx_func(tx):
+        def tx_func(tx: ManagedTransaction) -> Result:
             return tx.run(query, params or {})
 
         return self.run_in_transaction(tx_func, database)
 
-    def __enter__(self):
+    def __enter__(self) -> Session:
         """
         Context manager entry.
 
         Opens a session for the transaction block.
+
+        Returns:
+            Session object
         """
         logger.debug("Entering transaction context...")
         driver = cast(Driver, self.connection.get_driver())
@@ -118,6 +130,9 @@ class TransactionManager:
         Context manager exit.
 
         Closes the session and handles errors if necessary.
+
+        Returns:
+            False to not suppress exceptions
         """
         if self._session:
             try:

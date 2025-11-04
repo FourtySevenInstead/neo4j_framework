@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 
 if TYPE_CHECKING:
-    from src.neo4j_framework.stubs.neo4j import (
+    from neo4j_framework.stubs.neo4j import (
         Driver,
         Query,
         Result,

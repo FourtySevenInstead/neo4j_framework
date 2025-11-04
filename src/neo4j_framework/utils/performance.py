@@ -4,9 +4,13 @@ Performance monitoring utilities.
 
 import time
 import logging
-from typing import Any, Callable
+from typing import Callable, ParamSpec, TypeVar
+import functools
 
 logger = logging.getLogger(__name__)
+
+P = ParamSpec("P")
+R = TypeVar("R")
 
 
 class Performance:
@@ -15,7 +19,7 @@ class Performance:
     """
 
     @staticmethod
-    def time_function(func: Callable[..., Any]) -> Callable[..., Any]:
+    def time_function(func: Callable[P, R]) -> Callable[P, R]:
         """
         Decorator to measure function execution time.
 
@@ -29,10 +33,11 @@ class Performance:
             Wrapped function
         """
 
-        def wrapper(*args, **kwargs):
+        @functools.wraps(func)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             start = time.time()
             try:
-                result: Any = func(*args, **kwargs)
+                result: R = func(*args, **kwargs)
                 end = time.time()
                 elapsed = end - start
                 logger.debug(f"{func.__name__} execution time: {elapsed:.3f} seconds")
