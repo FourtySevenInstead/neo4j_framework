@@ -61,3 +61,6 @@ Thumbs.db
 *.log
 logs/
 .cache/
+
+# Project specific
+.fdignore

@@ -5,20 +5,19 @@ Transaction management with context manager support.
 from __future__ import annotations
 
 import logging
-from typing import Callable, Any, Dict, Optional, TYPE_CHECKING, cast, TypeVar
+from typing import Callable, Any, Dict, Optional, cast, TypeVar
 
 
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
-if TYPE_CHECKING:
-    from neo4j_framework.stubs.neo4j import (
-        Driver,
-        ManagedTransaction,
-        Result,
-        Session,
-    )  # noqa: F401
+from ..stubs.neo4j import (
+    Driver,
+    ManagedTransaction,
+    Result,
+    Session,
+)  # noqa: F401
 
 
 class TransactionManager:

@@ -23,7 +23,8 @@ sys.path.insert(0, str(project_root))
 def test_env_file(tmp_path):
     """Create a temporary .env file for testing."""
     env_file = tmp_path / ".env.test"
-    env_file.write_text("""
+    env_file.write_text(
+        """
 NEO4J_URI=neo4j://localhost:7687
 NEO4J_USERNAME=neo4j
 NEO4J_PASSWORD=test_password
@@ -32,7 +33,8 @@ NEO4J_ENCRYPTED=true
 NEO4J_MAX_CONNECTION_POOL_SIZE=100
 NEO4J_CONNECTION_TIMEOUT=30.0
 NEO4J_MAX_TRANSACTION_RETRY_TIME=30.0
-""")
+"""
+    )
     return str(env_file)
 
 
@@ -40,13 +42,15 @@ NEO4J_MAX_TRANSACTION_RETRY_TIME=30.0
 def test_env_file_invalid(tmp_path):
     """Create a temporary .env file with invalid values for testing validation."""
     env_file = tmp_path / ".env.invalid"
-    env_file.write_text("""
+    env_file.write_text(
+        """
 NEO4J_URI=neo4j://localhost:7687
 NEO4J_USERNAME=neo4j
 NEO4J_PASSWORD=test_password
 NEO4J_MAX_CONNECTION_POOL_SIZE=9999
 NEO4J_CONNECTION_TIMEOUT=-5.0
-""")
+"""
+    )
     return str(env_file)
 
 

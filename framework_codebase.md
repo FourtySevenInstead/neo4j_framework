@@ -1,242 +1,52 @@
-< /home/honeymatrix/Projects/neo4j_framework/tests/conftest.py >
-
+TREE:
 ```
-"""
-Pytest Configuration and Test Running Guide
-tests/conftest.py
-"""
-
-import os
-import sys
-import pytest
-from pathlib import Path
-from unittest.mock import MagicMock
-
-# Add the project root to the path
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
-
-
-# ============================================================================
-# Environment Fixtures
-# ============================================================================
-
-
-@pytest.fixture
-def test_env_file(tmp_path):
-    """Create a temporary .env file for testing."""
-    env_file = tmp_path / ".env.test"
-    env_file.write_text("""
-NEO4J_URI=neo4j://localhost:7687
-NEO4J_USERNAME=neo4j
-NEO4J_PASSWORD=test_password
-NEO4J_DATABASE=test_db
-NEO4J_ENCRYPTED=true
-NEO4J_MAX_CONNECTION_POOL_SIZE=100
-NEO4J_CONNECTION_TIMEOUT=30.0
-NEO4J_MAX_TRANSACTION_RETRY_TIME=30.0
-""")
-    return str(env_file)
-
-
-@pytest.fixture
-def test_env_file_invalid(tmp_path):
-    """Create a temporary .env file with invalid values for testing validation."""
-    env_file = tmp_path / ".env.invalid"
-    env_file.write_text("""
-NEO4J_URI=neo4j://localhost:7687
-NEO4J_USERNAME=neo4j
-NEO4J_PASSWORD=test_password
-NEO4J_MAX_CONNECTION_POOL_SIZE=9999
-NEO4J_CONNECTION_TIMEOUT=-5.0
-""")
-    return str(env_file)
-
-
-@pytest.fixture
-def clean_env():
-    """Clean environment before and after test."""
-    # Save original environment
-    original_env = os.environ.copy()
-
-    # Clear Neo4j-related variables
-    for key in list(os.environ.keys()):
-        if key.startswith("NEO4J_") or key.startswith("TEST_"):
-            del os.environ[key]
-
-    yield
-
-    # Restore original environment
-    os.environ.clear()
-    os.environ.update(original_env)
-
-
-# ============================================================================
-# Mock Neo4j Driver Fixtures
-# ============================================================================
-
-
-@pytest.fixture
-def mock_neo4j_driver():
-    """Create a mock Neo4j driver with proper session support."""
-    mock_driver = MagicMock()
-    mock_session = MagicMock()
-    mock_result = MagicMock()
-    mock_record = MagicMock()
-
-    # Setup record data
-    mock_record.data.return_value = {"n": {"name": "TestNode", "id": 1}}
-    mock_result.__iter__.return_value = [mock_record]
-
-    # Setup session behavior
-    mock_session.run.return_value = mock_result
-    mock_session.execute_read.return_value = [mock_record]
-    mock_session.execute_write.return_value = mock_result
-    mock_session.__enter__.return_value = mock_session
-    mock_session.__exit__.return_value = None
-
-    # Setup driver behavior
-    mock_driver.session.return_value = mock_session
-    mock_driver.verify_connectivity.return_value = None
-    mock_driver.close.return_value = None
-
-    return mock_driver
-
-
-@pytest.fixture
-def mock_neo4j_connection(mock_neo4j_driver):
-    """Create a mock Neo4jConnection instance."""
-    from src.neo4j_framework.db.connection import Neo4jConnection
-
-    conn = Neo4jConnection(
-        uri="neo4j://localhost:7687",
-        username="neo4j",
-        password="password",
-        database="test_db",
-        encrypted=True,
-    )
-
-    # Inject mock driver
-    conn._driver = mock_neo4j_driver
-
-    return conn
-
-
-# ============================================================================
-# Configuration Fixtures
-# ============================================================================
-
-
-@pytest.fixture
-def env_loader():
-    """Create a test EnvironmentLoader instance."""
-    from src.neo4j_framework.config.env_loader import EnvironmentLoader
-
-    return EnvironmentLoader(env_file=".env.test", env_prefix="NEO4J_")
-
-
-@pytest.fixture
-def db_config():
-    """Create a test database configuration."""
-    return {
-        "uri": "neo4j://localhost:7687",
-        "username": "neo4j",
-        "password": "test_password",
-        "database": "test_db",
-        "encrypted": True,
-        "max_connection_pool_size": 100,
-        "connection_timeout": 30.0,
-        "max_transaction_retry_time": 30.0,
-    }
-
-
-# ============================================================================
-# File Path Fixtures
-# ============================================================================
-
-
-@pytest.fixture
-def test_csv_file(tmp_path):
-    """Create a temporary CSV file for testing."""
-    csv_file = tmp_path / "test.csv"
-    csv_file.write_text("name,age
-Alice,30
-Bob,25
-")
-    return csv_file
-
-
-@pytest.fixture
-def test_cert_files(tmp_path):
-    """Create temporary certificate files for mTLS testing."""
-    cert_file = tmp_path / "client.crt"
-    key_file = tmp_path / "client.key"
-
-    cert_file.write_text(
-        "-----BEGIN CERTIFICATE-----
-FAKE_CERT
------END CERTIFICATE-----
-"
-    )
-    key_file.write_text(
-        "-----BEGIN PRIVATE KEY-----
-FAKE_KEY
------END PRIVATE KEY-----
-"
-    )
-
-    return {"cert": str(cert_file), "key": str(key_file)}
-
-
-# ============================================================================
-# Pytest Configuration
-# ============================================================================
-
-
-def pytest_configure(config):
-    """Register custom markers."""
-    config.addinivalue_line("markers", "unit: mark test as a unit test")
-    config.addinivalue_line("markers", "integration: mark test as an integration test")
-    config.addinivalue_line("markers", "slow: mark test as slow running")
-    config.addinivalue_line("markers", "security: mark test as security-related")
-    config.addinivalue_line("markers", "validation: mark test as validation-related")
-
-
-def pytest_collection_modifyitems(config, items):
-    """Modify test collection to add markers automatically."""
-    for item in items:
-        # Add markers based on test file name
-        if "test_security" in str(item.fspath):
-            item.add_marker(pytest.mark.security)
-        if "test_validators" in str(item.fspath):
-            item.add_marker(pytest.mark.validation)
-        if "test_integration" in str(item.fspath):
-            item.add_marker(pytest.mark.integration)
-
-
-# ============================================================================
-# Logging Setup for Tests
-# ============================================================================
-
-
-@pytest.fixture(autouse=True)
-def setup_test_logging():
-    """Setup logging for all tests."""
-    import logging
-
-    # Configure root logger
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    )
-
-    # Reduce noise from neo4j driver
-    logging.getLogger("neo4j").setLevel(logging.WARNING)
-
-    yield
-
-    # Cleanup handlers
-    logging.getLogger().handlers.clear()
+.
+├── examples
+│   └── basic_usage.py
+├── pyproject.toml
+├── pyrightconfig.json
+├── README.md
+├── requirements.txt
+├── src
+│   └── neo4j_framework
+│       ├── config
+│       │   ├── db_config.py
+│       │   ├── env_loader.py
+│       │   └── __init__.py
+│       ├── db
+│       │   ├── connection.py
+│       │   ├── __init__.py
+│       │   └── pool_manager.py
+│       ├── importers
+│       │   ├── csv_importer.py
+│       │   └── __init__.py
+│       ├── __init__.py
+│       ├── py.typed
+│       ├── queries
+│       │   ├── base_query.py
+│       │   ├── __init__.py
+│       │   ├── query_manager.py
+│       │   └── query_templates.py
+│       ├── stubs
+│       │   └── neo4j
+│       │       └── __init__.pyi
+│       ├── transactions
+│       │   ├── __init__.py
+│       │   └── transaction_manager.py
+│       └── utils
+│           ├── exceptions.py
+│           ├── __init__.py
+│           ├── logger.py
+│           ├── performance.py
+│           └── validators.py
+└── tests
+    ├── conftest.py
+    ├── __init__.py
+    ├── test_additional_coverage.py
+    ├── test_framework.py
+    ├── test_integration_advanced.py
+    ├── test_security.py
+    └── test_validators.py
 ```
 
 < /home/honeymatrix/Projects/neo4j_framework/tests/test_validators.py >
@@ -2354,6 +2164,251 @@ if __name__ == "__main__":
     pytest.main([__file__, "-v"])
 ```
 
+< /home/honeymatrix/Projects/neo4j_framework/tests/conftest.py >
+
+```
+"""
+Pytest Configuration and Test Running Guide
+tests/conftest.py
+"""
+
+import os
+import sys
+import pytest
+from pathlib import Path
+from unittest.mock import MagicMock
+
+# Add the project root to the path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
+
+# ============================================================================
+# Environment Fixtures
+# ============================================================================
+
+
+@pytest.fixture
+def test_env_file(tmp_path):
+    """Create a temporary .env file for testing."""
+    env_file = tmp_path / ".env.test"
+    env_file.write_text(
+        """
+NEO4J_URI=neo4j://localhost:7687
+NEO4J_USERNAME=neo4j
+NEO4J_PASSWORD=test_password
+NEO4J_DATABASE=test_db
+NEO4J_ENCRYPTED=true
+NEO4J_MAX_CONNECTION_POOL_SIZE=100
+NEO4J_CONNECTION_TIMEOUT=30.0
+NEO4J_MAX_TRANSACTION_RETRY_TIME=30.0
+"""
+    )
+    return str(env_file)
+
+
+@pytest.fixture
+def test_env_file_invalid(tmp_path):
+    """Create a temporary .env file with invalid values for testing validation."""
+    env_file = tmp_path / ".env.invalid"
+    env_file.write_text(
+        """
+NEO4J_URI=neo4j://localhost:7687
+NEO4J_USERNAME=neo4j
+NEO4J_PASSWORD=test_password
+NEO4J_MAX_CONNECTION_POOL_SIZE=9999
+NEO4J_CONNECTION_TIMEOUT=-5.0
+"""
+    )
+    return str(env_file)
+
+
+@pytest.fixture
+def clean_env():
+    """Clean environment before and after test."""
+    # Save original environment
+    original_env = os.environ.copy()
+
+    # Clear Neo4j-related variables
+    for key in list(os.environ.keys()):
+        if key.startswith("NEO4J_") or key.startswith("TEST_"):
+            del os.environ[key]
+
+    yield
+
+    # Restore original environment
+    os.environ.clear()
+    os.environ.update(original_env)
+
+
+# ============================================================================
+# Mock Neo4j Driver Fixtures
+# ============================================================================
+
+
+@pytest.fixture
+def mock_neo4j_driver():
+    """Create a mock Neo4j driver with proper session support."""
+    mock_driver = MagicMock()
+    mock_session = MagicMock()
+    mock_result = MagicMock()
+    mock_record = MagicMock()
+
+    # Setup record data
+    mock_record.data.return_value = {"n": {"name": "TestNode", "id": 1}}
+    mock_result.__iter__.return_value = [mock_record]
+
+    # Setup session behavior
+    mock_session.run.return_value = mock_result
+    mock_session.execute_read.return_value = [mock_record]
+    mock_session.execute_write.return_value = mock_result
+    mock_session.__enter__.return_value = mock_session
+    mock_session.__exit__.return_value = None
+
+    # Setup driver behavior
+    mock_driver.session.return_value = mock_session
+    mock_driver.verify_connectivity.return_value = None
+    mock_driver.close.return_value = None
+
+    return mock_driver
+
+
+@pytest.fixture
+def mock_neo4j_connection(mock_neo4j_driver):
+    """Create a mock Neo4jConnection instance."""
+    from src.neo4j_framework.db.connection import Neo4jConnection
+
+    conn = Neo4jConnection(
+        uri="neo4j://localhost:7687",
+        username="neo4j",
+        password="password",
+        database="test_db",
+        encrypted=True,
+    )
+
+    # Inject mock driver
+    conn._driver = mock_neo4j_driver
+
+    return conn
+
+
+# ============================================================================
+# Configuration Fixtures
+# ============================================================================
+
+
+@pytest.fixture
+def env_loader():
+    """Create a test EnvironmentLoader instance."""
+    from src.neo4j_framework.config.env_loader import EnvironmentLoader
+
+    return EnvironmentLoader(env_file=".env.test", env_prefix="NEO4J_")
+
+
+@pytest.fixture
+def db_config():
+    """Create a test database configuration."""
+    return {
+        "uri": "neo4j://localhost:7687",
+        "username": "neo4j",
+        "password": "test_password",
+        "database": "test_db",
+        "encrypted": True,
+        "max_connection_pool_size": 100,
+        "connection_timeout": 30.0,
+        "max_transaction_retry_time": 30.0,
+    }
+
+
+# ============================================================================
+# File Path Fixtures
+# ============================================================================
+
+
+@pytest.fixture
+def test_csv_file(tmp_path):
+    """Create a temporary CSV file for testing."""
+    csv_file = tmp_path / "test.csv"
+    csv_file.write_text("name,age
+Alice,30
+Bob,25
+")
+    return csv_file
+
+
+@pytest.fixture
+def test_cert_files(tmp_path):
+    """Create temporary certificate files for mTLS testing."""
+    cert_file = tmp_path / "client.crt"
+    key_file = tmp_path / "client.key"
+
+    cert_file.write_text(
+        "-----BEGIN CERTIFICATE-----
+FAKE_CERT
+-----END CERTIFICATE-----
+"
+    )
+    key_file.write_text(
+        "-----BEGIN PRIVATE KEY-----
+FAKE_KEY
+-----END PRIVATE KEY-----
+"
+    )
+
+    return {"cert": str(cert_file), "key": str(key_file)}
+
+
+# ============================================================================
+# Pytest Configuration
+# ============================================================================
+
+
+def pytest_configure(config):
+    """Register custom markers."""
+    config.addinivalue_line("markers", "unit: mark test as a unit test")
+    config.addinivalue_line("markers", "integration: mark test as an integration test")
+    config.addinivalue_line("markers", "slow: mark test as slow running")
+    config.addinivalue_line("markers", "security: mark test as security-related")
+    config.addinivalue_line("markers", "validation: mark test as validation-related")
+
+
+def pytest_collection_modifyitems(config, items):
+    """Modify test collection to add markers automatically."""
+    for item in items:
+        # Add markers based on test file name
+        if "test_security" in str(item.fspath):
+            item.add_marker(pytest.mark.security)
+        if "test_validators" in str(item.fspath):
+            item.add_marker(pytest.mark.validation)
+        if "test_integration" in str(item.fspath):
+            item.add_marker(pytest.mark.integration)
+
+
+# ============================================================================
+# Logging Setup for Tests
+# ============================================================================
+
+
+@pytest.fixture(autouse=True)
+def setup_test_logging():
+    """Setup logging for all tests."""
+    import logging
+
+    # Configure root logger
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
+
+    # Reduce noise from neo4j driver
+    logging.getLogger("neo4j").setLevel(logging.WARNING)
+
+    yield
+
+    # Cleanup handlers
+    logging.getLogger().handlers.clear()
+```
+
 < /home/honeymatrix/Projects/neo4j_framework/.env.example >
 
 ```
@@ -2886,7 +2941,7 @@ class Neo4jConnection:
         Raises:
             ValueError: If configuration is invalid
         """
-        from neo4j_framework.utils.validators import Validators
+        from ..utils.validators import Validators
 
         # Validate inputs
         Validators.validate_not_none(uri, "uri")
@@ -3240,7 +3295,7 @@ from typing import TYPE_CHECKING, Any, Dict, LiteralString, Optional, cast, List
 
 from neo4j import Query
 
-from neo4j_framework.queries.base_query import BaseQuery
+from .base_query import BaseQuery
 
 if TYPE_CHECKING:
     from neo4j_framework.stubs.neo4j import (
@@ -3967,56 +4022,6 @@ class Validators:
             raise ValueError(f"{name} must be <= {max_val}, got {value}")
 ```
 
-< /home/honeymatrix/Projects/neo4j_framework/src/neo4j_framework/**init**.py >
-
-```
-"""
-Neo4j Framework - A reusable library for Neo4j database operations.
-"""
-
-from neo4j_framework.config import EnvironmentLoader, get_db_config
-from neo4j_framework.db import Neo4jConnection, PoolManager
-from neo4j_framework.queries import QueryManager, BaseQuery, QueryTemplates
-from neo4j_framework.transactions import TransactionManager
-from neo4j_framework.importers import CSVImporter
-from neo4j_framework.utils import (
-    setup_logging,
-    Validators,
-    Performance,
-    Neo4jFrameworkException,
-    ConnectionError,
-    AuthenticationError,
-    ConfigurationError,
-    ValidationError,
-    QueryError,
-    TransactionError,
-)
-
-__version__ = "2.0.0"
-
-__all__ = [
-    "EnvironmentLoader",
-    "get_db_config",
-    "Neo4jConnection",
-    "PoolManager",
-    "QueryManager",
-    "BaseQuery",
-    "QueryTemplates",
-    "TransactionManager",
-    "CSVImporter",
-    "setup_logging",
-    "Validators",
-    "Performance",
-    "Neo4jFrameworkException",
-    "ConnectionError",
-    "AuthenticationError",
-    "ConfigurationError",
-    "ValidationError",
-    "QueryError",
-    "TransactionError",
-]
-```
-
 < /home/honeymatrix/Projects/neo4j_framework/src/neo4j_framework/stubs/neo4j/**init**.pyi >
 
 ```
@@ -4253,6 +4258,52 @@ class GraphDatabase:
 
 # Type alias for Cypher queries
 Query = LiteralString
+```
+
+< /home/honeymatrix/Projects/neo4j_framework/src/neo4j_framework/**init**.py >
+
+```
+from .config import EnvironmentLoader, get_db_config
+from .db import Neo4jConnection, PoolManager
+from .queries import QueryManager, BaseQuery, QueryTemplates
+from .transactions import TransactionManager
+from .importers import CSVImporter
+from .utils import (
+    setuplogging,
+    Validators,
+    Performance,
+    Neo4jFrameworkException,
+    ConnectionError,
+    AuthenticationError,
+    ConfigurationError,
+    ValidationError,
+    QueryError,
+    TransactionError,
+)
+
+__version__ = "2.0.0"
+
+__all__ = [
+    "EnvironmentLoader",
+    "get_db_config",
+    "Neo4jConnection",
+    "PoolManager",
+    "QueryManager",
+    "BaseQuery",
+    "QueryTemplates",
+    "TransactionManager",
+    "CSVImporter",
+    "setuplogging",
+    "Validators",
+    "Performance",
+    "Neo4jFrameworkException",
+    "ConnectionError",
+    "AuthenticationError",
+    "ConfigurationError",
+    "ValidationError",
+    "QueryError",
+    "TransactionError",
+]
 ```
 
 < /home/honeymatrix/Projects/neo4j_framework/examples/basic_usage.py >
