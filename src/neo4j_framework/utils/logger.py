@@ -16,7 +16,7 @@ def setup_logging(env_file: str = ".env", env_prefix: str = "NEO4J_"):
     Returns:
         Logger instance
     """
-    from config.env_loader import EnvironmentLoader
+    from ..config.env_loader import EnvironmentLoader
 
     loader = EnvironmentLoader(env_file, env_prefix)
     log_level = loader.get("LOG_LEVEL", "INFO")

@@ -6,19 +6,20 @@ from __future__ import annotations
 
 import logging
 
-from typing import Any, Dict, LiteralString, Optional, cast, List
+from typing import Any, Dict, LiteralString, Optional, cast, List, TYPE_CHECKING
 
 from neo4j import Query
 
 from .base_query import BaseQuery
 
-from stubs.neo4j import (
-    Driver,
-    ManagedTransaction,
-    Record,
-    Result,
-    Session,
-)  # noqa: F401
+if TYPE_CHECKING:
+    from ..stubs.neo4j import (
+        Driver,
+        ManagedTransaction,
+        Record,
+        Result,
+        Session,
+    )
 
 logger = logging.getLogger(__name__)
 

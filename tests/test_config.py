@@ -2,8 +2,8 @@ import os
 from typing import Any, Dict
 import pytest
 from dotenv import load_dotenv
-from ..src.neo4j_framework.config.env_loader import EnvironmentLoader
-from ..src.neo4j_framework.config.db_config import get_db_config
+from neo4j_framework.config.env_loader import EnvironmentLoader
+from neo4j_framework.config.db_config import get_db_config
 
 
 @pytest.fixture
@@ -106,7 +106,7 @@ def test_get_config(mock_env, mocker):
 
 def test_get_db_config(mock_env, mocker):
     mocker.patch(
-        "src.neo4j_framework.config.env_loader.EnvironmentLoader.get_config",
+        "neo4j_framework.config.env_loader.EnvironmentLoader.get_config",
         return_value={"uri": "test"},
     )
     config: Dict[str, Any] = get_db_config()

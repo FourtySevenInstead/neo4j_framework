@@ -7,13 +7,14 @@ from __future__ import annotations
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, Optional, cast, TYPE_CHECKING
 
-from stubs.neo4j import (
-    Driver,
-    Query,
-    Result,
-)  # noqa: F401
+if TYPE_CHECKING:
+    from ..stubs.neo4j import (
+        Driver,
+        Query,
+        Result,
+    )
 
 logger = logging.getLogger(__name__)
 

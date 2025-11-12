@@ -1,8 +1,8 @@
 import pytest
-from ..src.neo4j_framework.queries.base_query import BaseQuery
-from ..src.neo4j_framework.queries.query_manager import QueryManager
-from ..src.neo4j_framework.queries.query_templates import QueryTemplates
-from ..src.neo4j_framework.db.connection import Neo4jConnection
+from neo4j_framework.queries.base_query import BaseQuery
+from neo4j_framework.queries.query_manager import QueryManager
+from neo4j_framework.queries.query_templates import QueryTemplates
+from neo4j_framework.db.connection import Neo4jConnection
 
 
 @pytest.fixture
@@ -27,9 +27,10 @@ def test_base_query_execute(mocker, mock_connection):
     mock_session = mocker.Mock()
     mock_result = mocker.Mock(data=mocker.Mock(return_value={"key": "value"}))
     mock_session.run = mocker.Mock(return_value=[mock_result])
-    mock_connection.get_driver.return_value.session.return_value.__enter__.return_value = (
-        mock_session
-    )
+    mock_session_mock = mocker.Mock()
+    mock_session_mock.__enter__.return_value = mock_session
+    mock_session_mock.__exit__.return_value = False
+    mock_connection.get_driver.return_value.session.return_value = mock_session_mock
     query = BaseQuery("MATCH (n) RETURN n")
     result = query.execute(mock_connection)
     assert result == [{"key": "value"}]
@@ -46,9 +47,10 @@ def test_execute_read(mocker, mock_connection):
     mock_session.execute_read = mocker.Mock(
         return_value=mocker.Mock(__iter__=lambda: [mock_result])
     )
-    mock_connection.get_driver.return_value.session.return_value.__enter__.return_value = (
-        mock_session
-    )
+    mock_session_mock = mocker.Mock()
+    mock_session_mock.__enter__.return_value = mock_session
+    mock_session_mock.__exit__.return_value = False
+    mock_connection.get_driver.return_value.session.return_value = mock_session_mock
     qm = QueryManager(mock_connection)
     result = qm.execute_read("MATCH (n) RETURN n")
     assert result == [{"key": "value"}]
@@ -57,9 +59,10 @@ def test_execute_read(mocker, mock_connection):
 def test_execute_write(mocker, mock_connection):
     mock_session = mocker.Mock()
     mock_session.execute_write = mocker.Mock(return_value="result")
-    mock_connection.get_driver.return_value.session.return_value.__enter__.return_value = (
-        mock_session
-    )
+    mock_session_mock = mocker.Mock()
+    mock_session_mock.__enter__.return_value = mock_session
+    mock_session_mock.__exit__.return_value = False
+    mock_connection.get_driver.return_value.session.return_value = mock_session_mock
     qm = QueryManager(mock_connection)
     result = qm.execute_write("CREATE (n)")
     assert result == "result"
@@ -67,7 +70,7 @@ def test_execute_write(mocker, mock_connection):
 
 def test_execute_query(mocker, mock_connection):
     mocker.patch(
-        "src.neo4j_framework.queries.base_query.BaseQuery.execute",
+        "neo4j_framework.queries.base_query.BaseQuery.execute",
         return_value=[{"key": "value"}],
     )
     qm = QueryManager(mock_connection)

@@ -1,7 +1,7 @@
 import pytest
 from pathlib import Path
-from ..src.neo4j_framework.importers.csv_importer import CSVImporter
-from ..src.neo4j_framework.db.connection import Neo4jConnection
+from neo4j_framework.importers.csv_importer import CSVImporter
+from neo4j_framework.db.connection import Neo4jConnection
 
 
 @pytest.fixture
@@ -46,9 +46,10 @@ def test_import_csv(mocker, mock_connection):
     mocker.patch.object(Path, "as_uri", return_value="file:///test.csv")
     mock_session = mocker.Mock()
     mock_session.run = mocker.Mock(return_value="result")
-    mock_connection.get_driver.return_value.session.return_value.__enter__.return_value = (
-        mock_session
-    )
+    mock_session_mock = mocker.Mock()
+    mock_session_mock.__enter__.return_value = mock_session
+    mock_session_mock.__exit__.return_value = False
+    mock_connection.get_driver.return_value.session.return_value = mock_session_mock
     importer = CSVImporter(mock_connection)
     result = importer.import_csv(
         "test.csv", "LOAD CSV FROM $file_url", params={"param": 1}

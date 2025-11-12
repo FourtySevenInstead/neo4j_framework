@@ -92,17 +92,18 @@ class Neo4jConnection:
         try:
             # Create appropriate auth based on auth_type
             if auth_type == "basic":
-                auth: Auth = Auth.basic(self.username, self.password)
+                realm = auth_kwargs.get("realm")
+                auth: Auth = Auth("basic", self.username, self.password, realm)
             elif auth_type == "kerberos":
                 if "ticket" not in auth_kwargs:
                     raise ValueError("Kerberos ticket required")
                 ticket: str = auth_kwargs["ticket"]
-                auth = Auth.kerberos(ticket)
+                auth = Auth("kerberos", ticket)
             elif auth_type == "bearer":
                 if "token" not in auth_kwargs:
                     raise ValueError("Bearer token required")
                 token: str = auth_kwargs["token"]
-                auth = Auth.bearer(token)
+                auth = Auth("bearer", token)
             elif auth_type == "custom":
                 required = ["scheme", "principal", "credentials", "realm"]
                 missing = [k for k in required if k not in auth_kwargs]
@@ -111,8 +112,9 @@ class Neo4jConnection:
                 scheme: str = auth_kwargs["scheme"]
                 principal: str = auth_kwargs["principal"]
                 credentials: str = auth_kwargs["credentials"]
-                realm_val: str = auth_kwargs["realm"]
-                auth = Auth.custom(scheme, principal, credentials, realm_val)
+                realm: Optional[str] = auth_kwargs.get("realm")
+                parameters: Dict[str, Any] = auth_kwargs.get("parameters", {})
+                auth = Auth(scheme, principal, credentials, realm, **parameters)
             else:
                 raise ValueError(f"Unknown auth type: {auth_type}")
 
@@ -168,7 +170,7 @@ class Neo4jConnection:
         if key_path and not os.path.exists(key_path):
             raise ValueError(f"Key file not found: {key_path}")
 
-        auth: Auth = Auth.basic(self.username, self.password)
+        auth: Auth = Auth("basic", self.username, self.password)
 
         driver_kwargs: Dict[str, Any] = {
             "max_connection_pool_size": self.max_connection_pool_size,

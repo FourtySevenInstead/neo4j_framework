@@ -1,9 +1,9 @@
 from typing import Any, Dict
 import pytest
 from neo4j import GraphDatabase, Auth
-from ..src.neo4j_framework.db.connection import Neo4jConnection
-from ..src.neo4j_framework.db.pool_manager import PoolManager
-from ..src.neo4j_framework.utils.exceptions import ConnectionError
+from neo4j_framework.db.connection import Neo4jConnection
+from neo4j_framework.db.pool_manager import PoolManager
+from neo4j_framework.utils.exceptions import ConnectionError
 
 
 @pytest.fixture
@@ -25,7 +25,7 @@ def test_neo4j_connection_init():
     )
     assert conn.uri == "neo4j://test"
     assert conn.max_connection_pool_size == 50
-    assert not conn.encrypted  # Since URI has no +s
+    assert conn.encrypted  # Defaults to True for security
 
 
 def test_neo4j_connection_init_validation():
@@ -111,7 +111,7 @@ def test_pool_manager_init(mock_driver):
     assert pm.driver == mock_driver
 
 
-def test_pool_manager_get_stats():
+def test_pool_manager_get_stats(mocker):
     pm = PoolManager(mocker.Mock())
     stats = pm.get_pool_stats()
     assert "note" in stats

@@ -8,15 +8,13 @@ version = "2.0.0"
 description = "Production-ready Neo4j Python library with type safety and security"
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "MIT"}
-authors = [
-    {name = "Your Name", email = "your.email@example.com"}
-]
+license = { text = "MIT" }
+authors = [{ name = "Your Name", email = "your.email@example.com" }]
 
 dependencies = [
-    "neo4j>=5.0.0,<6.0.0",
-    "python-dotenv>=1.0.0",
-    "typing-extensions>=4.0.0"
+  "neo4j>=5.0.0,<6.0.0",
+  "python-dotenv>=1.0.0",
+  "typing-extensions>=4.0.0",
 ]
 
 [project.urls]
@@ -25,7 +23,7 @@ Repository = "https://github.com/FourtySevenInstead/neo4j_framework.git"
 Documentation = "https://github.com/FourtySevenInstead/neo4j_framework/blob/main/README.md"
 
 [tool.setuptools]
-package-dir = {"" = "src"}
+package-dir = { "" = "src" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -37,3 +35,6 @@ exclude = ["**/node_modules", "**/__pycache__", "tests"]
 typeCheckingMode = "strict"
 reportMissingTypeStubs = false
 reportUnknownMemberType = false
+
+[tool.pytest.ini_options]
+pythonpath = "src"

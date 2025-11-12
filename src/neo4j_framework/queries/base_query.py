@@ -3,12 +3,13 @@ Base query class with parameter safety and logging.
 """
 
 import logging
-from typing import Any, Dict, LiteralString, Optional, Callable, TypeVar
+from typing import Any, Dict, LiteralString, Optional, Callable, TypeVar, TYPE_CHECKING
 
 from ..db.connection import Neo4jConnection
-from stubs.neo4j import Session, Result  # noqa: F401
-
 from neo4j import Query
+
+if TYPE_CHECKING:
+    from ..stubs.neo4j import Session, Result
 
 logger = logging.getLogger(__name__)
 
