@@ -4,16 +4,19 @@ Neo4j connection management with support for multiple authentication methods.
 
 import logging
 from typing import Optional, Any, Dict, Type, cast, Callable, TypeVar
-from neo4j import GraphDatabase, Driver, Auth, Session
+
+from neo4j import GraphDatabase, Driver, Session, basic_auth, kerberos_auth
+from neo4j import bearer_auth, custom_auth
 
 logger = logging.getLogger(__name__)
+
 T = TypeVar("T")
 
 
 class Neo4jConnection:
     """
-    Manages Neo4j database connections with support for multiple authentication methods.
-    Handles connection pooling and lifecycle management.
+    Manages Neo4j database connections with support for multiple authentication
+    methods. Handles connection pooling and lifecycle management.
     """
 
     def __init__(
@@ -52,7 +55,7 @@ class Neo4jConnection:
         # Validate pool size bounds
         if max_connection_pool_size < 1 or max_connection_pool_size > 500:
             raise ValueError(
-                f"max_connection_pool_size must be between 1 and 500, "
+                "max_connection_pool_size must be between 1 and 500, "
                 f"got {max_connection_pool_size}"
             )
 
@@ -67,8 +70,8 @@ class Neo4jConnection:
         # Only use encrypted flag if URI doesn't already handle it
         self.encrypted: bool = False if has_secure_scheme else encrypted
         self.max_connection_pool_size: int = max_connection_pool_size
-
         self._driver: Optional[Driver] = None
+
         logger.debug(f"Neo4jConnection initialized: {uri}")
 
     def connect(
@@ -80,7 +83,8 @@ class Neo4jConnection:
         Establish connection to Neo4j database.
 
         Args:
-            auth_type: Authentication type ('basic', 'kerberos', 'bearer', 'custom')
+            auth_type: Authentication type ('basic', 'kerberos', 'bearer',
+                'custom')
             **auth_kwargs: Additional authentication parameters
 
         Returns:
@@ -93,17 +97,17 @@ class Neo4jConnection:
             # Create appropriate auth based on auth_type
             if auth_type == "basic":
                 realm = auth_kwargs.get("realm")
-                auth: Auth = Auth("basic", self.username, self.password, realm)
+                auth = basic_auth(self.username, self.password, realm)
             elif auth_type == "kerberos":
                 if "ticket" not in auth_kwargs:
                     raise ValueError("Kerberos ticket required")
                 ticket: str = auth_kwargs["ticket"]
-                auth = Auth("kerberos", ticket)
+                auth = kerberos_auth(ticket)
             elif auth_type == "bearer":
                 if "token" not in auth_kwargs:
                     raise ValueError("Bearer token required")
                 token: str = auth_kwargs["token"]
-                auth = Auth("bearer", token)
+                auth = bearer_auth(token)
             elif auth_type == "custom":
                 required = ["scheme", "principal", "credentials", "realm"]
                 missing = [k for k in required if k not in auth_kwargs]
@@ -114,7 +118,7 @@ class Neo4jConnection:
                 credentials: str = auth_kwargs["credentials"]
                 realm: Optional[str] = auth_kwargs.get("realm")
                 parameters: Dict[str, Any] = auth_kwargs.get("parameters", {})
-                auth = Auth(scheme, principal, credentials, realm, **parameters)
+                auth = custom_auth(scheme, principal, credentials, realm, **parameters)
             else:
                 raise ValueError(f"Unknown auth type: {auth_type}")
 
@@ -137,9 +141,7 @@ class Neo4jConnection:
             # Test the connection
             self._driver.verify_connectivity()
             logger.info(f"Connected to Neo4j: {self.uri}")
-
             return self._driver
-
         except Exception as e:
             logger.error(f"Connection failed: {e}")
             raise
@@ -166,12 +168,10 @@ class Neo4jConnection:
 
         if not os.path.exists(cert_path):
             raise ValueError(f"Certificate file not found: {cert_path}")
-
         if key_path and not os.path.exists(key_path):
             raise ValueError(f"Key file not found: {key_path}")
 
-        auth: Auth = Auth("basic", self.username, self.password)
-
+        auth = basic_auth(self.username, self.password)
         driver_kwargs: Dict[str, Any] = {
             "max_connection_pool_size": self.max_connection_pool_size,
             "encrypted": True,
@@ -183,7 +183,6 @@ class Neo4jConnection:
             auth=auth,
             **driver_kwargs,
         )
-
         logger.info(f"Connected with mTLS: {self.uri}")
         return self._driver
 
@@ -211,13 +210,11 @@ class Neo4jConnection:
             # pyright: ignore[attr-defined]
             # _pool is a private Neo4j driver attribute without type stubs
             pool = cast(Any, self._driver._pool)
-
             in_use_count: int = 0
             available_count: int = 0
 
             if hasattr(pool, "_in_use"):
                 in_use_count = len(pool._in_use)
-
             if hasattr(pool, "_available"):
                 available_count = len(pool._available)
 
@@ -249,7 +246,9 @@ class Neo4jConnection:
         """
         if not self.is_connected():
             raise RuntimeError("Not connected to Neo4j")
+
         effective_db = database or self.database
+
         try:
             with self._driver.session(database=effective_db) as session:  # type: ignore
                 return func(session)

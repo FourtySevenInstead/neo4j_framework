@@ -1,4 +1,5 @@
 import pytest
+
 from neo4j_framework.transactions.transaction_manager import TransactionManager
 from neo4j_framework.db.connection import Neo4jConnection
 
@@ -19,7 +20,7 @@ def test_transaction_manager_init(mock_connection):
 def test_run_in_transaction(mocker, mock_connection):
     mock_session = mocker.Mock()
     mock_session.execute_write = mocker.Mock(return_value="result")
-    mock_session_mock = mocker.Mock()
+    mock_session_mock = mocker.MagicMock()
     mock_session_mock.__enter__.return_value = mock_session
     mock_session_mock.__exit__.return_value = False
     mock_connection.get_driver.return_value.session.return_value = mock_session_mock

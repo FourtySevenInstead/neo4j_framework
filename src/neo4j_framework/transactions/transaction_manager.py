@@ -14,11 +14,12 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from neo4j import Driver
+
 logger = logging.getLogger(__name__)
 T = TypeVar("T")
 if TYPE_CHECKING:
     from ..stubs.neo4j import (
-        Driver,
         ManagedTransaction,
         Result,
         Session,
@@ -60,7 +61,7 @@ class TransactionManager:
             Exception: If transaction fails
         """
         logger.debug("Starting managed transaction...")
-        driver = cast("Driver", self.connection.get_driver())  # String type for cast
+        driver = cast(Driver, self.connection.get_driver())  # String type for cast
         effective_db = database or cast(str, self.connection.database)
         try:
             with driver.session(database=effective_db) as session:
@@ -106,7 +107,7 @@ class TransactionManager:
             Session object
         """
         logger.debug("Entering transaction context...")
-        driver = cast("Driver", self.connection.get_driver())  # String type for cast
+        driver = cast(Driver, self.connection.get_driver())  # String type for cast
         self._session = driver.session(database=cast(str, self.connection.database))
         return self._session
 

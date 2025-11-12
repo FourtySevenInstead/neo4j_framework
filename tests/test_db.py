@@ -1,6 +1,8 @@
 from typing import Any, Dict
+
 import pytest
-from neo4j import GraphDatabase, Auth
+
+from neo4j import GraphDatabase
 from neo4j_framework.db.connection import Neo4jConnection
 from neo4j_framework.db.pool_manager import PoolManager
 from neo4j_framework.utils.exceptions import ConnectionError
@@ -11,7 +13,7 @@ def mock_driver(mocker):
     mock_driver_instance = mocker.Mock()
     mock_driver_instance.verify_connectivity = mocker.Mock()
     mock_driver_instance.close = mocker.Mock()
-    mock_driver_instance.session = mocker.Mock()
+    mock_driver_instance.session = mocker.MagicMock()
     mocker.patch.object(GraphDatabase, "driver", return_value=mock_driver_instance)
     return mock_driver_instance
 
@@ -47,10 +49,11 @@ def test_connect_basic(mock_driver):
     mock_driver.verify_connectivity.assert_called_once()
 
 
-def test_connect_kerberos(mock_driver):
+def test_connect_kerberos(mocker, mock_driver):
+    mock_auth = mocker.patch("neo4j_framework.db.connection.kerberos_auth")
     conn = Neo4jConnection(uri="neo4j://test", username="user", password="pass")
     conn.connect(auth_type="kerberos", ticket="test_ticket")
-    Auth.kerberos.assert_called_with("test_ticket")  # type: ignore
+    mock_auth.assert_called_with("test_ticket")
 
 
 def test_connect_invalid_auth():
@@ -97,7 +100,7 @@ def test_run_in_session_not_connected():
         conn.run_in_session(lambda s: None)
 
 
-def test_get_pool_stats(mock_driver):
+def test_get_pool_stats(mocker, mock_driver):
     conn = Neo4jConnection(uri="neo4j://test", username="user", password="pass")
     conn.connect()
     mock_driver._pool = mocker.Mock(_in_use=[1, 2], _available=[3])  # type: ignore

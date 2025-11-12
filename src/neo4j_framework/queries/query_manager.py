@@ -5,20 +5,16 @@ Query execution engine with read/write differentiation and logging.
 from __future__ import annotations
 
 import logging
-
 from typing import Any, Dict, LiteralString, Optional, cast, List, TYPE_CHECKING
 
-from neo4j import Query
+from neo4j import Driver, Query
 
 from .base_query import BaseQuery
 
 if TYPE_CHECKING:
     from ..stubs.neo4j import (
-        Driver,
         ManagedTransaction,
-        Record,
         Result,
-        Session,
     )
 
 logger = logging.getLogger(__name__)

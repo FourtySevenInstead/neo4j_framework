@@ -9,9 +9,10 @@ import os
 from pathlib import Path
 from typing import Any, Dict, Optional, cast, TYPE_CHECKING
 
+from neo4j import Driver
+
 if TYPE_CHECKING:
     from ..stubs.neo4j import (
-        Driver,
         Query,
         Result,
     )
