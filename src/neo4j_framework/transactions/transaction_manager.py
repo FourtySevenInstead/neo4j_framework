@@ -60,6 +60,9 @@ class TransactionManager:
         Raises:
             Exception: If transaction fails
         """
+        if not callable(tx_function):
+            raise TypeError("tx_function object is not callable")
+
         logger.debug("Starting managed transaction...")
         driver = cast(Driver, self.connection.get_driver())  # String type for cast
         effective_db = database or cast(str, self.connection.database)

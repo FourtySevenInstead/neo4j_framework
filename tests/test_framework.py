@@ -10,6 +10,8 @@ from typing import Dict, Any
 from unittest.mock import MagicMock, patch
 import pytest
 
+from neo4j import Driver
+
 logger = logging.getLogger(__name__)
 
 
@@ -178,19 +180,23 @@ class TestEnvironmentLoader:
                 max_connection_pool_size=0,
             )
 
-    def test_basic_auth_creation(self):
+    def test_basic_auth_creation(self, mock_neo4j_driver):
         """Test basic authentication creation."""
         from neo4j_framework.db.connection import Neo4jConnection
         from neo4j import Auth
 
-        conn = Neo4jConnection(
-            uri="neo4j://localhost:7687",
-            username="neo4j",
-            password="password",
-        )
+        with patch(
+            "neo4j_framework.db.connection.GraphDatabase.driver",
+            return_value=mock_neo4j_driver,
+        ):
+            conn = Neo4jConnection(
+                uri="neo4j://localhost:7687",
+                username="neo4j",
+                password="password",
+            )
 
-        auth = conn.connect(auth_type="basic")
-        assert isinstance(auth, Driver)
+            auth = conn.connect(auth_type="basic")
+            assert isinstance(auth, Driver)
 
     def test_missing_credentials_error(self):
         """Test error when credentials are missing."""

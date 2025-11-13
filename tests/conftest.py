@@ -9,6 +9,8 @@ import pytest
 from pathlib import Path
 from unittest.mock import MagicMock
 
+from neo4j import Driver
+
 # Add the project root to the path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
@@ -80,7 +82,7 @@ def clean_env():
 @pytest.fixture
 def mock_neo4j_driver():
     """Create a mock Neo4j driver with proper session support."""
-    mock_driver = MagicMock()
+    mock_driver = MagicMock(spec=Driver)
     mock_session = MagicMock()
     mock_result = MagicMock()
     mock_record = MagicMock()

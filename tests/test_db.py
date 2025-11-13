@@ -64,6 +64,7 @@ def test_connect_invalid_auth():
 
 def test_connect_with_mtls(mocker, mock_driver):
     mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("os.access", return_value=True)
     conn = Neo4jConnection(uri="neo4j://test", username="user", password="pass")
     conn.connect_with_mtls(cert_path="cert.pem", key_path="key.pem")
 

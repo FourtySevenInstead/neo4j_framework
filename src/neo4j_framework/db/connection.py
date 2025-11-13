@@ -3,6 +3,7 @@ Neo4j connection management with support for multiple authentication methods.
 """
 
 import logging
+import os
 from typing import Optional, Any, Dict, Type, cast, Callable, TypeVar
 
 from neo4j import GraphDatabase, Driver, Session, basic_auth, kerberos_auth
@@ -22,11 +23,13 @@ class Neo4jConnection:
     def __init__(
         self,
         uri: str,
-        username: str,
-        password: str,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
         database: str = "neo4j",
         encrypted: bool = True,
         max_connection_pool_size: int = 100,
+        connection_timeout: float = 30.0,
+        max_connection_lifetime: float = 7200.0,
     ) -> None:
         """
         Initialize Neo4j connection configuration.
@@ -38,6 +41,8 @@ class Neo4jConnection:
             database: Target database name
             encrypted: Enable encryption (ignored for URIs with +s or +ssc)
             max_connection_pool_size: Maximum number of concurrent connections
+            connection_timeout: Connection timeout in seconds
+            max_connection_lifetime: Maximum connection lifetime in seconds
 
         Raises:
             ValueError: If configuration is invalid
@@ -46,9 +51,15 @@ class Neo4jConnection:
 
         # Validate inputs
         Validators.validate_not_none(uri, "uri")
-        Validators.validate_not_none(username, "username")
-        Validators.validate_not_none(password, "password")
         Validators.validate_string_not_empty(uri, "uri")
+
+        if username is None or password is None:
+            raise ValueError("Username and password required")
+
+        # Cast after validation
+        username = cast(str, username)
+        password = cast(str, password)
+
         Validators.validate_string_not_empty(username, "username")
         Validators.validate_string_not_empty(password, "password")
 
@@ -58,6 +69,16 @@ class Neo4jConnection:
                 "max_connection_pool_size must be between 1 and 500, "
                 f"got {max_connection_pool_size}"
             )
+
+        Validators.validate_float(
+            connection_timeout, "connection_timeout", min_val=0.1, max_val=300.0
+        )
+        Validators.validate_float(
+            max_connection_lifetime,
+            "max_connection_lifetime",
+            min_val=60.0,
+            max_val=14400.0,
+        )
 
         self.uri: str = uri
         self.username: str = username
@@ -70,6 +91,8 @@ class Neo4jConnection:
         # Only use encrypted flag if URI doesn't already handle it
         self.encrypted: bool = False if has_secure_scheme else encrypted
         self.max_connection_pool_size: int = max_connection_pool_size
+        self.connection_timeout: float = connection_timeout
+        self.max_connection_lifetime: float = max_connection_lifetime
         self._driver: Optional[Driver] = None
 
         logger.debug(f"Neo4jConnection initialized: {uri}")
@@ -125,6 +148,8 @@ class Neo4jConnection:
             # Build driver kwargs with proper types
             driver_kwargs: Dict[str, Any] = {
                 "max_connection_pool_size": self.max_connection_pool_size,
+                "connection_timeout": self.connection_timeout,
+                "max_connection_lifetime": self.max_connection_lifetime,
             }
 
             # Only add encrypted flag if we need to specify it
@@ -168,8 +193,14 @@ class Neo4jConnection:
 
         if not os.path.exists(cert_path):
             raise ValueError(f"Certificate file not found: {cert_path}")
-        if key_path and not os.path.exists(key_path):
-            raise ValueError(f"Key file not found: {key_path}")
+        if not os.access(cert_path, os.R_OK):
+            raise ValueError(f"Certificate file not readable: {cert_path}")
+
+        if key_path:
+            if not os.path.exists(key_path):
+                raise ValueError(f"Key file not found: {key_path}")
+            if not os.access(key_path, os.R_OK):
+                raise ValueError(f"Key file not readable: {key_path}")
 
         auth = basic_auth(self.username, self.password)
         driver_kwargs: Dict[str, Any] = {

@@ -40,8 +40,8 @@ class TestEdgeCases:
 
     def test_empty_query_string(self):
         """Test handling of empty query string."""
-        query = BaseQuery("", {})
-        assert query.query_str == ""
+        with pytest.raises(ValueError, match="query_str cannot be None"):
+            BaseQuery("", {})
 
     def test_none_query_parameters(self, mock_neo4j_connection):
         """Test query execution with None parameters."""
